@@ -79,3 +79,87 @@ Si la portée Android est trop réduite pour le **sprint 3**, livrer une **appli
 * Documentation et respect des jalons
 
 
+
+# Annexe 1 -  Idées de Projets Mobiles Modernes avec Stripe
+
+## 1. **Éducation & Apprentissage**
+
+1. Application de cours en ligne avec abonnements (vidéos + quiz).
+2. Plateforme de tutorat en visio avec paiement par session.
+3. Appli mobile pour apprendre les langues avec chat IA + micro-paiements.
+4. Application de préparation aux examens (QCM premium).
+5. SaaS pour gestion de cours privés (professeurs indépendants).
+
+## 2. **Finance & Paiements**
+
+6. Application de gestion de budget avec abonnement premium.
+7. Portefeuille numérique avec paiements Stripe.
+8. Application de suivi des dépenses d’équipe avec facturation automatique.
+9. Appli de crowdfunding (mini-Ulule) avec paiements Stripe Connect.
+10. SaaS de facturation simple pour freelances.
+
+## 3. **E-commerce & Marketplace**
+
+11. Marketplace mobile de produits artisanaux avec paiement Stripe.
+12. Application de vente de vêtements seconde main avec commissions.
+13. SaaS « shop mobile » pour restaurants locaux avec commandes en ligne.
+14. Appli de réservation de services à domicile (plombier, ménage).
+15. Plateforme de location de matériel (caméras, drones, voitures).
+
+## 4. **Santé & Bien-être**
+
+16. Application de coaching sportif avec paiements récurrents.
+17. Plateforme de consultation médicale en ligne (paiement par rendez-vous).
+18. Appli mobile de méditation avec abonnement freemium.
+19. SaaS de suivi nutritionnel avec micro-transactions.
+20. Application de fitness avec challenges sponsorisés payants.
+
+## 5. **Événements & Loisirs**
+
+21. Billetterie mobile pour événements locaux (paiement Stripe).
+22. Appli de réservation de salles de sport.
+23. SaaS pour organiser des conférences (tickets, badges, paiements).
+24. Application de gestion de festivals avec tickets numériques.
+25. Plateforme de cours de danse ou yoga (paiement par cours).
+
+## 6. **Services professionnels**
+
+26. Appli de gestion de rendez-vous (coiffeur, esthéticienne, etc.).
+27. SaaS de gestion de freelances avec facturation automatique.
+28. Application pour avocats/notaires avec réservation et paiement.
+29. Plateforme de recrutement freelance avec paiement sécurisé.
+30. SaaS RH pour gérer les heures et salaires des employés.
+
+## 7. **Immobilier & Voyage**
+
+31. Application de location de logements (type Airbnb simplifié).
+32. Plateforme mobile de colocation avec abonnement premium.
+33. SaaS de gestion locative (paiement du loyer par Stripe).
+34. Application de réservation de voyages sur mesure.
+35. Appli de covoiturage local avec micro-paiements.
+
+## 8. **Créateurs & Contenu**
+
+36. Application type OnlyFans (paiements par abonnement pour créateurs).
+37. SaaS de newsletters payantes (via Stripe).
+38. Application mobile pour photographes (vente de presets/photos).
+39. Plateforme de podcasts avec abonnements premium.
+40. Application de vidéos éducatives (paiement à la demande).
+
+## 9. **IA & Automatisation**
+
+41. Chatbot mobile premium (paiement par nombre de tokens).
+42. SaaS d’analyse de texte (CV, contrats) avec paiement par usage.
+43. Application IA pour générer des images/vidéos avec crédits payants.
+44. Appli mobile de transcription audio avec crédits Stripe.
+45. SaaS de résumé automatique de documents (abonnement mensuel).
+
+## 10. **Divers innovants**
+
+46. Application de livraison locale (épiceries, restaurants).
+47. SaaS de gestion d’associations (adhésions payantes en ligne).
+48. Appli mobile de paris/jeux trivia (crédits virtuels achetés par Stripe).
+49. Plateforme de gestion de parking avec réservation et paiement.
+50. Application de garde d’animaux (paiement à l’heure).
+
+
