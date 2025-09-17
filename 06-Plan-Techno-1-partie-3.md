@@ -360,4 +360,3 @@ await messaging.send({
 * **Données documentaires centrées utilisateur**, CRUD simples, **notifications** et **offline** → **Firebase** (Auth, Firestore, Functions, FCM).
 * **Données métier relationnelles**, **transactions**, **rapports** SQL, **géospatial avancé** → **Postgres** (Supabase) + **RLS** (et **PostGIS** si carte/distance).
 
-Si vous voulez, je peux livrer ce contenu **en DOCX** avec une mise en page pédagogique (titres numérotés, table des matières) et y ajouter des **exercices pratiques** (mini-lab : écrire une règle Firestore, créer une RLS, requêter PostGIS sur un rayon).
