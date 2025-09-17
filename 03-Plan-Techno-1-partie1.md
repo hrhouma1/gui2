@@ -394,3 +394,253 @@ Collections principales :
 
 
 
+
+
+<br/>
+<br/>
+
+
+# Feedback – Projet EcoMap
+
+## 1. Points forts
+
+* **Pertinence du thème** : le projet répond à un enjeu actuel (mobilité durable, électrification des transports, vélo-partage). C’est un domaine **innovant et à fort impact social**, qui peut séduire un jury gouvernemental.
+* **Clarté fonctionnelle** : la description des cas d’utilisation (EV, BIXI, filtrage, favoris, statistiques CO₂) est bien définie. L’équipe a pris soin de penser à l’**expérience utilisateur** et aux bénéfices écologiques.
+* **Multilinguisme** : interface prévue en français et en anglais, un bon point pour l’accessibilité au Québec.
+* **Utilisation de données ouvertes** : réutiliser les API de la Ville de Montréal et de BIXI est une approche réaliste et pragmatique.
+* **Valeur ajoutée** : les statistiques écologiques (CO₂ évité) apportent une dimension motivationnelle, qui va au-delà du simple repérage de bornes.
+
+---
+
+## 2. Améliorations possibles
+
+* **Priorisation Agile** : le projet couvre beaucoup de fonctionnalités (carte, météo, favoris, stats). Il faudra découper en **MVP** :
+
+  * Sprint 1 : Authentification + carte avec bornes EV et BIXI.
+  * Sprint 2 : Filtrage + itinéraires.
+  * Sprint 3 : Notifications de disponibilité.
+  * Sprint 4 : Météo + statistiques CO₂.
+* **Données en temps réel** : les APIs publiques (ex. BIXI) doivent être testées pour vérifier la fréquence de mise à jour et la fiabilité des données.
+* **Performances et consommation** : afficher plusieurs centaines de bornes peut être lourd sur mobile. Prévoir un système de **clustering** ou de **chargement par zones**.
+* **Notifications** : penser aux conditions de batterie des utilisateurs. Une notification “borne disponible” peut vite devenir intrusive si mal calibrée.
+* **Accessibilité et inclusion** : prévoir que l’application soit utilisable par des personnes non-voyantes (support VoiceOver / TalkBack).
+* **Backend/API** : l’API définie est claire mais encore générique. Il faudrait choisir la **stack technique** (par ex. Firebase vs Supabase/Postgres). Pour ce projet, **Supabase/Postgres + PostGIS** semble idéal car il y a beaucoup de calculs **géographiques** (bornes proches, filtrage par distance).
+
+---
+
+## 3. Recommandation technologique
+
+* **Mobile** : Flutter (multiplateforme, rapide pour prototypage).
+* **Backend** :
+
+  * **Supabase/Postgres + PostGIS** : parfait pour la gestion géospatiale (bornes, distance, filtrage).
+  * **Auth Supabase** : gestion des utilisateurs, JWT simple.
+  * **Edge Functions** : gestion des notifications, calculs CO₂.
+* **APIs externes** : Ville de Montréal (bornes EV), BIXI (temps réel), OpenWeather (météo).
+* **Notifications** : Firebase Cloud Messaging (push).
+
+---
+
+## 4. Risques et points de vigilance
+
+* **Dépendance aux données ouvertes** : si l’API change ou tombe en panne, l’application perd une partie de sa valeur. Prévoir un **cache local**.
+* **Exactitude des stats CO₂** : il faudra justifier la formule de calcul (par ex. 1 km vélo = x grammes CO₂ évités).
+* **Complexité du backend** : combiner météo, bornes EV, BIXI et stats peut surcharger la première version. Il est conseillé de livrer un **MVP simple** et d’ajouter les extras par itérations.
+
+---
+
+## 5. Évaluation pédagogique
+
+* **Bonne maîtrise** des concepts vus en cours : géolocalisation, cartes, notifications, APIs.
+* **Travail complet** : diagrammes, récits utilisateurs, API backend.
+* **Pour aller plus loin** : démontrer la **justification des choix techniques** (par exemple : pourquoi Postgres/PostGIS plutôt que Firestore). Cela donnera plus de profondeur à la présentation.
+
+
+
+
+
+<br/>
+<br/>
+
+
+# 1) Mobile (Flutter) — App first class
+
+## 1.1 Packages principaux
+
+* **Carte & géoloc** : `google_maps_flutter`, `geolocator` (position en temps réel; centrage initial sur Montréal).&#x20;
+* **Clustering & performance** : `google_maps_cluster_manager` (regrouper des centaines de bornes), `flutter_cache_manager` (cache tuiles/images).
+* **Routage & état** : `go_router`, `flutter_riverpod` (ou Bloc).
+* **HTTP & JSON** : `dio` (timeouts/retry), `freezed` + `json_serializable` (modèles sûrs).
+* **Localisation & i18n** : `flutter_localizations`, `intl` (FR/EN comme prévu).&#x20;
+* **Notifications** : `firebase_messaging` (push), `flutter_local_notifications` (rappels locaux – ex. borne redevenue dispo).&#x20;
+* **Offline** : `hive`/`isar` pour cache persistant (favoris, dernières bornes, météo récente).
+* **Accessibilité** : `flutter_screenutil` (tailles adaptatives), support TalkBack/VoiceOver.
+
+## 1.2 Architecture app
+
+* **Clean Architecture** (layers `data`/`domain`/`presentation`), Repository pattern.
+* **Feature toggles** via Remote Config (activer météo, CO₂).
+* **Sécurité client** : aucune clé sensible en dur; configs par variables d’environnement et/ou RC.
+
+## 1.3 UX clés
+
+* **Recherche** par adresse (barre de recherche → appel Geocoding), **itinéraire** via deep-link Google/Apple Maps.&#x20;
+* **Filtres** (type: EV vs BIXI; disponibilité; rayon), **fiche** borne (adresse, ports, type, statut, distance).&#x20;
+* **Favoris** + **bilingue** FR/EN. &#x20;
+
+---
+
+# 2) Backend — Supabase (Postgres + PostGIS) + Functions
+
+> Pourquoi **Postgres + PostGIS** ? Les besoins “**bornes à proximité**”, “**rayon**”, “**tri par distance**” et “**filtres**” sont natifs et performants avec PostGIS (index GIST + `ST_DWithin/Distance`). Votre API côté serveur prévoit déjà des routes “à proximité” et des filtres, ce qui cadre parfaitement avec du SQL géospatial. &#x20;
+
+## 2.1 Services
+
+* **DB managée** : Supabase (Postgres 15 + **PostGIS**).
+* **Auth** : Supabase Auth (email/password; OAuth optionnel).
+* **Stockage** : Supabase Storage (icônes custom, éventuelles images).
+* **Edge Functions** (Deno/TS) : façade d’agrégation API publiques (BIXI, Ville de Montréal), webhooks notifications.
+* **Realtime** (optionnel) : canal de “disponibilité” si une source temps réel fiable est accessible.
+
+## 2.2 Schéma SQL (proposé)
+
+```
+users(id uuid pk, email text unique, display_name text, created_at timestamptz)
+ecospots(                    -- bornes EV + stations BIXI
+  id bigserial pk,
+  type text check (type in ('ev','bixi')),
+  name text,
+  provider text,             -- 'VilleMTL', 'BIXI'
+  address text,
+  location geography(Point,4326),
+  capabilities jsonb,        -- ex: {level: 2, ports: 6} pour EV ; {docks: 35} pour BIXI
+  is_free boolean,           -- gratuité si fourni par la source
+  status text,               -- 'available' | 'busy' | 'unknown'
+  last_seen_at timestamptz,
+  metadata jsonb             -- bruts de l’API source
+)
+favorites(                   -- favoris par utilisateur
+  user_id uuid references users(id) on delete cascade,
+  ecospot_id bigint references ecospots(id) on delete cascade,
+  added_at timestamptz default now(),
+  primary key(user_id, ecospot_id)
+)
+eco_actions(                 -- actions de mobilité verte pour stats CO₂
+  id bigserial pk,
+  user_id uuid references users(id) on delete cascade,
+  kind text check (kind in ('bixi_km','ev_charge_kwh','walk_km','transit_trip')),
+  value numeric not null,    -- nombre de km, kWh, etc.
+  at timestamptz default now()
+)
+user_stats_daily(            -- matérialisation journalière
+  user_id uuid,
+  day date,
+  km numeric default 0,
+  co2_saved_g numeric default 0,
+  primary key(user_id, day)
+)
+```
+
+### Index & géospatial
+
+```sql
+CREATE INDEX ecospots_location_gix ON ecospots USING GIST (location);
+-- Requête type: spots dans un rayon
+-- SELECT ... WHERE ST_DWithin(location, ST_MakePoint($lon,$lat)::geography, $radius_m)
+-- ORDER BY ST_Distance(location, ST_MakePoint($lon,$lat)::geography)
+```
+
+### RLS (Row-Level Security)
+
+* `favorites`, `eco_actions`, `user_stats_daily` : **RLS ON**.
+
+  * **Policy SELECT/INSERT** : `user_id = auth.uid()` (chaque usager ne voit que ses données).
+* `ecospots` : **lecture publique** (read-only) si données ouvertes; **INSERT/UPDATE** limité aux **ETL/Functions** signées.
+
+## 2.3 Pipelines & ETL
+
+* **BIXI** : Edge Function `etl_bixi` (cron) → fetch temps réel → upsert `ecospots` (type `bixi`, `status`, `last_seen_at`).&#x20;
+* **Ville de Montréal (bornes EV)** : Edge Function `etl_ev` (cron) → normalise capacités/ports/type.&#x20;
+* **Météo** : `weather_cache` table (clé lat/lon/heure) pour limiter les appels OpenWeather; servi à l’app.&#x20;
+
+## 2.4 API (Gateway)
+
+> Vos méthodes d’API proposées s’alignent très bien sur cette façade : “/bornes”, “/à-proximité”, “/favorites”, “/stats”… &#x20;
+
+* `GET /ecospots?type=&lat=&lng=&radius=&free=&status=` → requête PostGIS paginée.
+* `GET /ecospots/{id}` → détail.
+* `GET /ecospots/nearby?lat=&lng=&radius=` → **ST\_DWithin** + tri distance.
+* `POST /favorites` / `GET /favorites` → gérés par RLS (uid).
+* `POST /actions` → enregistre action verte; **trigger** met à jour `user_stats_daily`.
+* `GET /stats?period=day|week|month` → somme CO₂ évité.
+
+## 2.5 Logique serveur (triggers & jobs)
+
+* **Trigger** `on_eco_action_insert` → calcule `co2_saved_g` par type (coef configurable) → upsert dans `user_stats_daily`.
+* **Job** quotidien → recalcul consolidé (sécurité).
+* **Webhook** “spot re-available” → si une station passe `busy→available` et qu’un utilisateur l’a en favori dans un rayon, envoi d’une **notification** (via FCM topic/device).
+
+---
+
+# 3) Intégrations externes
+
+## 3.1 Cartographie & Itinéraires
+
+* **Google Maps SDK** (mobile) pour affichage des points + **Directions** pour itinéraire depuis un point (deep-link si vous préférez l’app Maps).&#x20;
+* **Distance Matrix** (option) si besoin de temps vers **plusieurs** spots pour classer les plus rapides.
+
+## 3.2 Données sources
+
+* **BIXI** : API temps réel officielle (stations, disponibilité docks/électrifiées).&#x20;
+* **Ville de Montréal** : données ouvertes bornes de recharge EV.&#x20;
+* **OpenWeather** : météo actuelle + prévisions (affichage + alertes).&#x20;
+
+---
+
+# 4) Sécurité, conformité, clés
+
+* **RLS** stricte sur données personnelles (favoris, actions, stats).
+* **Lecture publique** possible sur `ecospots` (open data).
+* **Clés API** : restreindre clés Google (SHA-1 iOS/Android; si passerelle HTTP, restreindre IP); jamais en clair côté app.
+* **Auth** : JWT Supabase sur l’app; rotation de refresh tokens standard.
+
+---
+
+# 5) Observabilité, qualité, CI/CD
+
+* **Logs & traces** : Supabase logs + Edge Functions console; **Sentry** (app) + Crashlytics.
+* **Analytics** : événements clés (`map_loaded`, `filter_changed`, `spot_tapped`, `route_opened`).
+* **CI/CD** : GitHub Actions/Codemagic → build Android (AAB) + iOS (TestFlight) par branche; **flavors** dev/staging/prod.
+* **Tests** :
+
+  * Unitaires (mappers, repos, calcul CO₂)
+  * Golden tests UI (fiche spot, liste filtrée)
+  * Intégration (requêtes PostGIS sur dataset seed)
+
+---
+
+# 6) Performance et UX à grande échelle
+
+* **Clustering** cartes (éviter des centaines de marqueurs simultanés).
+* **Chargement par fenêtre spatiale** (bounds de la carte → requête serveur limitée).
+* **Pagination** côté API (`limit/offset` ou `id > last_id`) pour points d’intérêt.
+* **Cache** : météo, réponses “nearby”, favoris (TTL court).
+* **Accessibilité** : contraste, labels TalkBack, tailles dynamiques.
+
+---
+
+# 7) Plan d’exécution priorisé (3 sprints de 3 semaines)
+
+* **Sprint 1 — Fondations** : Auth + carte + **GET /ecospots/nearby** (PostGIS) + FR/EN + favoris (local).
+* **Sprint 2 — Données réelles** : ETL BIXI + Ville MTL (cron) + filtres (type/rayon) + favoris (serveur/RLS) + itinéraire. &#x20;
+* **Sprint 3 — Valeur ajoutée** : météo + notifications “re-available” + stats CO₂ (actions + daily stats) + optimisation cluster.  &#x20;
+
+---
+
+# 8) Pourquoi cette stack (résumé)
+
+* **Postgres + PostGIS (Supabase)** pour le **géospatial** rapide et exact (rayon/tri distance), les **filtres** et l’**ETL** open data; **RLS** pour la protection des données utilisateur. Vos routes “à proximité”, “favoris”, “stats” cadrent parfaitement avec ce modèle. &#x20;
+* **Flutter** simplifie la livraison **mobile-first** avec carte, filtres, bilingue, et notifications locales/push comme décrit.  &#x20;
+* **Edge Functions** pour agréger **BIXI / Ville MTL / Météo** côté serveur, éviter les CORS/clé exposée, et déclencher les **notifications**. &#x20;
+
+
