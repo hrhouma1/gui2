@@ -275,7 +275,7 @@ Déployer les règles :
 firebase deploy --only firestore:rules
 ```
 
-### Attention erreur (voir Annexe 2)
+### Attention erreur (voir Annexe 2 et Annexe 3)
 
 ```bash
 PS C:\03-projetsGA\autres\demoflutter1\functions> firebase deploy --only firestore:rules
@@ -292,6 +292,35 @@ Error: Cannot understand what targets to deploy/serve. No targets in firebase.js
 
 Having trouble? Try firebase [command] --help
 ```
+
+
+
+
+# Arborescence  (à la racine du projet)
+
+```
+demoflutter1/
+├─ .firebaserc
+├─ firebase.json              ← (déclare firestore.rules + indexes)
+├─ firestore.rules            ← (règles Firestore)
+├─ firestore.indexes.json     ← (index Firestore, même vide)
+├─ package.json
+└─ functions/
+   ├─ package.json
+   ├─ tsconfig.json
+   ├─ .eslintrc.js
+   ├─ src/
+   │  ├─ index.ts
+   │  ├─ firebase.ts
+   │  ├─ middlewares/
+   │  │  └─ auth.ts
+   │  └─ controllers/
+   │     └─ noteController.ts
+   └─ lib/                    ← (généré par tsc après build)
+```
+
+
+
 
 ---
 
@@ -1049,6 +1078,278 @@ Error: Your project backend-demo-1 must be on the Blaze (pay-as-you-go) plan ...
 * Passer au plan Blaze (configurer budget/alertes)
 * `npm run deploy:functions`
 * Tester `https://REGION-PROJECT_ID.cloudfunctions.net/api/health`
+
+
+
+<br/>
+<br/>
+
+# Annexe 2
+
+
+
+Le message dit que Firebase **ne trouve pas la cible `firestore:rules`**… parce qu’elle **n’est pas déclarée dans ton `firebase.json`**. On corrige ça en 3 minutes.
+
+---
+
+## 1) Assure-toi d’être **à la racine** du projet
+
+Vérifie que tu vois `.firebaserc`, `firebase.json`, `firestore.rules`, et le dossier `functions/`.
+
+```powershell
+cd C:\03-projetsGA\autres\demoflutter1
+firebase use           # doit afficher backend-demo-1 comme "active"
+```
+
+Si besoin :
+
+```powershell
+firebase use backend-demo-1
+```
+
+---
+
+## 2) Ajoute la section **firestore** dans `firebase.json`
+
+Ouvre **`firebase.json`** (à la racine) et **ajoute** le bloc `firestore`. Exemple complet sûr pour Windows :
+
+```json
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "npm --prefix \"%RESOURCE_DIR%\" run build"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": { "port": 5001 },
+    "firestore": { "port": 8080 },
+    "auth": { "port": 9099 },
+    "ui": { "enabled": true }
+  }
+}
+```
+
+> Le champ `"rules": "firestore.rules"` **déclare** la cible `firestore:rules`. Sans ça, `--only firestore:rules` n’existe pas pour Firebase CLI → d’où ton erreur.
+
+---
+
+## 3) Crée le fichier d’index (si absent)
+
+À côté de `firestore.rules`, ajoute un fichier **`firestore.indexes.json`** minimal :
+
+```json
+{
+  "indexes": [],
+  "fieldOverrides": []
+}
+```
+
+---
+
+## 4) (Optionnel) Régénérer la config via l’assistant
+
+Tu peux aussi laisser Firebase le faire :
+
+```powershell
+firebase init firestore
+# → accepte de créer/écraser firestore.rules et firestore.indexes.json
+```
+
+---
+
+## 5) Déploie **les règles** (Spark autorisé)
+
+Sous PowerShell, la forme suivante marche très bien :
+
+```powershell
+firebase deploy --only "firestore:rules"
+```
+
+> Tu peux aussi déployer tout Firestore (règles + index) :
+
+```powershell
+firebase deploy --only "firestore"
+```
+
+---
+
+## 6) À propos des warnings
+
+* `DeprecationWarning: punycode` : **inoffensif**, tu peux l’ignorer.
+* Le plan **Spark** bloque **les Functions cloud** (tu as déjà vu l’erreur Blaze).
+
+  * Tu peux **déployer les règles Firestore** sans passer à Blaze.
+  * Pour Functions : utilise **les émulateurs** en local, ou **upgrade Blaze** si tu veux une URL publique.
+
+---
+
+## 7) Vérification rapide
+
+* Voir les règles actives (Console Firebase → Firestore → Rules)
+* Test lecture/écriture côté client avec un **ID token** : tes règles exigent `ownerUid == request.auth.uid`.
+
+---
+
+### Récap express
+
+1. Ajouter `"firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" }` dans `firebase.json`.
+2. Créer `firestore.indexes.json` vide si manquant.
+3. Depuis la **racine** :
+
+   ```powershell
+   firebase deploy --only "firestore:rules"
+   ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<br/>
+
+<br/>
+
+
+# Annexe 3 - Arborescence ASCII (à la racine du projet)
+
+```
+demoflutter1/
+├─ .firebaserc
+├─ firebase.json              ← (déclare firestore.rules + indexes)
+├─ firestore.rules            ← (règles Firestore)
+├─ firestore.indexes.json     ← (index Firestore, même vide)
+├─ package.json
+└─ functions/
+   ├─ package.json
+   ├─ tsconfig.json
+   ├─ .eslintrc.js
+   ├─ src/
+   │  ├─ index.ts
+   │  ├─ firebase.ts
+   │  ├─ middlewares/
+   │  │  └─ auth.ts
+   │  └─ controllers/
+   │     └─ noteController.ts
+   └─ lib/                    ← (généré par tsc après build)
+```
+
+> **Important :** les fichiers **`firebase.json`**, **`firestore.rules`** et **`firestore.indexes.json`** sont **à la racine** (`demoflutter1/`), pas dans `functions/`.
+
+---
+
+# Contenu **complet** des fichiers Firestore/Config
+
+## 1) `firebase.json` (à la racine)
+
+```json
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "npm --prefix \"%RESOURCE_DIR%\" run build"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": { "port": 5001 },
+    "firestore": { "port": 8080 },
+    "auth": { "port": 9099 },
+    "ui": { "enabled": true }
+  }
+}
+```
+
+* La section `"firestore"` **déclare** où trouver les règles et les indexes.
+* Le `predeploy` ne lance **que le build** (pas de lint) → évite les soucis `ENOENT` sous Windows.
+
+---
+
+## 2) `firestore.rules` (à la racine)
+
+```
+// Firestore Security Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /notes/{noteId} {
+      // Création autorisée seulement par un utilisateur connecté
+      // et qui écrit ownerUid == request.auth.uid
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      // Lecture / mise à jour / suppression autorisées
+      // uniquement au propriétaire du document
+      allow read, update, delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+  }
+}
+```
+
+---
+
+## 3) `firestore.indexes.json` (à la racine)
+
+```json
+{
+  "indexes": [],
+  "fieldOverrides": []
+}
+```
+
+> Vide pour l’instant. Tu l’enrichiras quand tu ajouteras de la pagination/tri complexes.
+
+---
+
+# Commandes (PowerShell) pour déployer **uniquement les règles**
+
+Depuis la **racine** (`demoflutter1\`) :
+
+```powershell
+firebase use backend-demo-1
+firebase deploy --only "firestore:rules"
+```
+
+> Sous PowerShell, **garde les guillemets** autour de `firestore:rules`.
+> Si tu veux déployer à la fois **règles + indexes** :
+
+```powershell
+firebase deploy --only "firestore"
+```
+
+---
+
+# Rappels utiles
+
+* Si tu vois encore l’erreur *“No targets in firebase.json match '--only firestore\:rules'”*, c’est presque toujours parce que :
+
+  1. Tu n’es **pas à la racine** (tu es resté dans `functions/`), **ou**
+  2. La section `"firestore"` **manque** dans `firebase.json`, **ou**
+  3. Tu as tapé la commande sans guillemets sur PowerShell.
+
+* Le plan **Spark** permet ce déploiement des **règles**.
+  Pour **déployer les Functions en cloud**, il faut **Blaze** (tu peux rester sur les **émulateurs** en local sans frais).
+
+
+
+
 
 
 
