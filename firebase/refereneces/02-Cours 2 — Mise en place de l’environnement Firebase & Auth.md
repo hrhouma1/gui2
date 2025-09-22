@@ -226,7 +226,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 Branchement du middleware dans `index.ts` :
 
 ```ts
+import * as functions from "firebase-functions";
 import {requireAuth} from "./middlewares/auth";
+
+import express from "express";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
 
 // routes publiques
 app.get("/health", (_req, res) => res.status(200).json({ok: true}));
@@ -236,6 +245,8 @@ app.get("/me", requireAuth, (req, res) => {
   const uid = (req as any).uid;
   res.status(200).json({uid});
 });
+
+export const api = functions.https.onRequest(app);
 ```
 
 ---
