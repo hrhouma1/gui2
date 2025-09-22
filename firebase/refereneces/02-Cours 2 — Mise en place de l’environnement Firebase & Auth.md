@@ -275,6 +275,24 @@ Déployer les règles :
 firebase deploy --only firestore:rules
 ```
 
+### Attention erreur (voir Annexe 2)
+
+```bash
+PS C:\03-projetsGA\autres\demoflutter1\functions> firebase deploy --only firestore:rules
+(node:30500) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Error: Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only firestore:rules'. If you are using PowerShell make sure you place quotes around any comma-separated lists (ex: --only "functions,firestore").
+PS C:\03-projetsGA\autres\demoflutter1\functions> cd ..
+PS C:\03-projetsGA\autres\demoflutter1> firebase deploy --only firestore:rules
+(node:48604) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+
+Error: Cannot understand what targets to deploy/serve. No targets in firebase.json match '--only firestore:rules'. If you are using PowerShell make sure you place quotes around any comma-separated lists (ex: --only "functions,firestore").
+
+Having trouble? Try firebase [command] --help
+```
+
 ---
 
 ## 8) Emulators pour un flux de dev rapide
