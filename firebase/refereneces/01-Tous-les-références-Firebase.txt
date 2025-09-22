@@ -1,0 +1,27 @@
+---------------------------------------------------------------------------------------
+Google Sign In with Firebase (Updated)
+---------------------------------------------------------------------------------------
+https://www.youtube.com/watch?v=x1SLLGJ9UAE
+
+---------------------------------------------------------------------------------------
+Firebase – Full Course for Beginners
+---------------------------------------------------------------------------------------
+https://www.youtube.com/watch?v=fgdpvwEWJ9M
+
+---------------------------------------------------------------------------------------
+==­> 2019 - Building an API with Firebase (1.2K)
+---------------------------------------------------------------------------------------
+https://medium.com/p/109041721f77 
+
+---------------------------------------------------------------------------------------
+==­> 2019 - Building an API with Firebase (183)
+---------------------------------------------------------------------------------------
+Building an API with Firebase
+https://medium.com/angular-in-depth/building-an-api-with-firebase-6108a207c1fd
+
+
+---------------------------------------------------------------------------------------
+==­> 2019 - How to structure a serverless REST API with Firebase Functions + Express (75)
+---------------------------------------------------------------------------------------
+How to structure a serverless REST API with Firebase Functions + Express
+https://blog.jasonbyrne.net/how-to-structure-a-serverless-rest-api-with-firebase-functions-express-1d7b93aaa6af
