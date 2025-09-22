@@ -107,7 +107,9 @@ Déploiement (cloud) :
 cd functions
 npm run build
 npm run deploy
-firebase deploy --only functions
+firebase deploy --only functions (il faut passer au plan pay as you go)
+npm run serve (en mode développement)
+curl http://localhost:5001/backend-demo-1/us-central1/api/health
 ```
 
 - Possibilité d'erreur classique (Voir annexe 1)
