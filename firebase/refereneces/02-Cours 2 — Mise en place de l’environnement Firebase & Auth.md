@@ -366,8 +366,15 @@ UI des émulateurs (souvent) : `http://localhost:4000`
 PS C:\03-projetsGA\autres\demoflutter1> npm run serve npm error Missing script: "serve" npm error npm error To see a list of scripts, run: npm error npm run npm error A complete log of this run can be found in: C:\Users\rehou\AppData\Local\npm-cache\_logs\2025-09-23T00_22_10_921Z-debug-0.log
 ```
 
-### Solution : voir l'annexe 4
+### Solution : voir les Annexe 5 et 6
 
+ou exécuter
+
+```powershell
+firebase emulators:start
+```
+
+<br/>
 
 ---
 
@@ -1591,6 +1598,12 @@ curl -X POST "http://localhost:5001/backend-demo-1/us-central1/api/v1/notes" \
 * Vérifie que tu es **à la racine** (`demoflutter1\`) quand tu fais `npm run serve`.
 * Vérifie que **`package.json` (racine)** contient bien `"serve": "firebase emulators:start"`.
 * Alternative immédiate : exécute directement `firebase emulators:start`.
+
+
+<br/>
+<br/>
+
+# Annexe 6
 
 
 
