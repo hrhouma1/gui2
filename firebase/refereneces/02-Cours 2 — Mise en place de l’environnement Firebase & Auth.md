@@ -350,6 +350,40 @@ Exemple de `firebase.json` :
 }
 ```
 
+> Voici le package.json final dans le dossier functions
+
+
+```json
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "npm --prefix \"%RESOURCE_DIR%\" run build"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "auth": {
+      "port": 9099
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  }
+}
+```
+
+
 Lancer :
 
 ```bash
