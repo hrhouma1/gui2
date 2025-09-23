@@ -1807,5 +1807,309 @@ http://localhost:5001/backend-demo-1/us-central1/api/me
 
 
 
+<br/>
+<br/>
+
+# Annexe 7 - Création d'utilisateur (processus)
+
+<br/>
+
+# Annexe 7 - Partie 1
+
+> Au début, l'utilisateur n'existe pas. Il faut le créer 
+> `EMAIL_NOT_FOUND` = l’utilisateur n’existe pas encore dans **l’Auth Emulator**. Crée-le d’abord, puis connecte-toi pour récupérer l’`idToken`.
+
+Voici 3 chemins, au choix.
+
+
+
+##  Méthode 1 — Tout en ligne de commande (PowerShell friendly)
+
+### 1) Créer l’utilisateur dans **l’émulateur**
+
+```powershell
+# crée john@doe.com dans l'Auth Emulator (clé = anything)
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=anything" `
+  -ContentType "application/json" `
+  -Body '{"email":"john@doe.com","password":"secret123","returnSecureToken":true}'
+```
+
+### 2) Se connecter → récupérer l’ID token
+
+```powershell
+$login = Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=anything" `
+  -ContentType "application/json" `
+  -Body '{"email":"john@doe.com","password":"secret123","returnSecureToken":true}'
+
+$token = $login.idToken
+$token
+```
+
+### 3) Appeler ta route protégée `/me` (Functions Emulator)
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:5001/backend-demo-1/us-central1/api/me" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+> Ça doit répondre `{ "uid": "..." }`.
+
+> Variante cURL “pure” (CMD/PowerShell) :
+
+```bat
+curl -X POST "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=anything" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"john@doe.com\",\"password\":\"secret123\",\"returnSecureToken\":true}"
+
+curl -X POST "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=anything" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"john@doe.com\",\"password\":\"secret123\",\"returnSecureToken\":true}"
+```
+
+(prends `idToken` de la 2ᵉ réponse et utilise-le dans `Authorization: Bearer <ID_TOKEN>`)
+
+
+
+# Méthode 2 — Par l’UI des Émulateurs (clic)
+
+1. Ouvre `http://localhost:4000` → **Authentication** → **Add user** → saisis `john@doe.com` / `secret123`.
+2. Reprends **l’étape 2** ci-dessus (signIn via REST) pour obtenir l’`idToken`.
+3. Appelle `/me` avec le header `Authorization: Bearer <ID_TOKEN>`.
+
+
+
+# Méthode 3 — Dans la console Dev du navigateur (JS)
+
+```js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const app = initializeApp({ apiKey: "dev", authDomain: "localhost", projectId: "backend-demo-1" });
+const auth = getAuth(app);
+connectAuthEmulator(auth, "http://localhost:9099");
+
+// si l'utilisateur n'existe pas encore, crée-le une fois via l'UI ou la route signUp
+const cred = await signInWithEmailAndPassword(auth, "john@doe.com", "secret123");
+const idToken = await cred.user.getIdToken();
+console.log("ID_TOKEN =", idToken);
+
+const me = await fetch("http://localhost:5001/backend-demo-1/us-central1/api/me", {
+  headers: { Authorization: `Bearer ${idToken}` }
+});
+console.log(await me.json());
+```
+
+---
+
+## ⚠️ Petits pièges courants
+
+* **Toujours l’émulateur !** Tes URLs doivent pointer sur `http://localhost:9099/...identitytoolkit...` quand tu es en local.
+* **Compte inexistant → `EMAIL_NOT_FOUND`** : crée d’abord l’utilisateur (signUp ou UI).
+* **`Missing Bearer token`** : le navigateur n’envoie aucun header. Utilise Postman/cURL/JS avec
+  `Authorization: Bearer <ID_TOKEN>`.
+* **Ports** : Functions (`5001`), Auth (`9099`), Firestore (`8080` ou celui que tu as défini), UI (`4000`).
+* Si tu as changé le port Firestore (ex. `8081`), pense à `connectFirestoreEmulator(db, "127.0.0.1", 8081)` côté client.
+
+
+<br/>
+
+# Annexe 7 - Partie 2
+
+
+
+Reconstruis et relance :
+
+```powershell
+npm --prefix functions run build
+firebase emulators:start --only "auth,functions,firestore"
+```
+
+Ensuite, réessaie ton POST (avec `$token` valide) :
+
+```powershell
+$body = @{ title = "Ma première note"; content = "Bonjour" } | ConvertTo-Json
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:5001/backend-demo-1/us-central1/api/v1/notes" `
+  -ContentType "application/json; charset=utf-8" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -Body $body
+```
+
+
+<br/>
+
+# Annexe 7 - Partie 3
+
+
+## 1) Vérifie/écrase `functions/src/controllers/noteController.ts`
+
+```ts
+import {Request, Response} from "express";
+import {db} from "../firebase";
+
+export async function createNote(req: Request, res: Response) {
+  const uid = (req as any).uid as string;
+  const {title, content} = req.body || {};
+  if (!title || typeof title !== "string") {
+    return res.status(422).json({error: "title is required (string)"});
+  }
+
+  const doc = db.collection("notes").doc();
+  const now = Date.now();
+  const note = {
+    id: doc.id,
+    title,
+    content: typeof content === "string" ? content : "",
+    ownerUid: uid,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  await doc.set(note);
+  return res.status(201).json({data: note});
+}
+```
+
+---
+
+## 2) Vérifie/écrase `functions/src/index.ts`
+
+```ts
+import * as functions from "firebase-functions";
+import express from "express";
+import cors from "cors";
+import {requireAuth} from "./middlewares/auth";
+import {createNote} from "./controllers/noteController";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Public
+app.get("/health", (_req, res) => {
+  res.status(200).json({ok: true, service: "api", version: "v1"});
+});
+
+// Protégé
+app.get("/me", requireAuth, (req, res) => {
+  const uid = (req as any).uid as string;
+  res.status(200).json({uid});
+});
+
+// >>>>>>>>>>>> LA ROUTE QUI NOUS INTÉRESSE <<<<<<<<<<<<
+app.post("/v1/notes", requireAuth, createNote);
+
+export const api = functions.https.onRequest(app);
+```
+
+
+
+
+- Si jamais vous avez l’erreur **TS7030 “Not all code paths return a value”**, elle vient du middleware `requireAuth`: certaines branches ne “return” rien. Corrigez-le en précisant le type de retour **`Promise<void>`** et en **retournant** explicitement après chaque réponse / `next()`.
+
+Remplace **entièrement** `functions/src/middlewares/auth.ts` par ceci :
+
+```ts
+import {Request, Response, NextFunction} from "express";
+import {auth} from "../firebase";
+
+export async function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const header = req.headers.authorization ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+
+  if (!token) {
+    res.status(401).json({error: "Missing Bearer token"});
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(token);
+    (req as any).uid = decoded.uid;
+    next();
+    return;
+  } catch {
+    res.status(401).json({error: "Invalid or expired token"});
+    return;
+  }
+}
+```
+
+Puis reconstruis et relance :
+
+```powershell
+npm --prefix functions run build
+firebase emulators:start --only "auth,functions,firestore"
+```
+
+Ensuite, réessaie ton POST (avec `$token` valide) :
+
+```powershell
+$body = @{ title = "Ma première note"; content = "Bonjour" } | ConvertTo-Json
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:5001/backend-demo-1/us-central1/api/v1/notes" `
+  -ContentType "application/json; charset=utf-8" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -Body $body
+```
+
+
+
+
+> Assure-toi qu’il y a **une ligne vide** à la fin du fichier (style `eol-last`).
+
+---
+
+## 3) Redémarre proprement l’émulateur (important)
+
+```powershell
+# Rebuild (même si l'émulateur transpile, on force)
+npm --prefix functions run build
+
+# Si un émulateur tourne, ferme la fenêtre, puis relance :
+firebase emulators:start --only "auth,functions,firestore"
+```
+
+> Quand l’émulateur démarre, il affiche la liste des routes montées. Tu devrais voir la function `api` prête.
+
+---
+
+## 4) Reposte la note (PowerShell, sans curl alias)
+
+```powershell
+$body = @{
+  title   = "Ma première note"
+  content = "Bonjour"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:5001/backend-demo-1/us-central1/api/v1/notes" `
+  -ContentType "application/json; charset=utf-8" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -Body $body
+```
+
+Tu dois obtenir `201 Created` avec un JSON `{ data: { id, title, ... } }`.
+
+---
+
+### Si ça bloque encore (check rapide)
+
+* **Chemin d’import** : `import {createNote} from "./controllers/noteController";` (sans `.ts`, bon dossier).
+* **Aucune autre app.use("/api", …)** : on exporte directement `api = onRequest(app)`, donc l’URL correcte est
+  `.../us-central1/api/v1/notes`.
+* **Redémarrage émulateur** : parfois, il garde un ancien code. Rebuild + restart = fiable.
+* **Token expiré** : si tu vois 401, refais le `signInWithPassword` pour régénérer `$token`.
+
+
+
+
+
 
 
