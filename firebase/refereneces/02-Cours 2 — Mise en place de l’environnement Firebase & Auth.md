@@ -1350,6 +1350,86 @@ firebase deploy --only "firestore"
 
 
 
+<br/>
+<br/>
+
+
+
+# Annexe 4 - erreur 40 liée à firebase deploy --only "firestore"
+
+
+Le 403 vient uniquement du **déploiement des index** : l’API **Cloud Firestore** côté **Google Cloud** n’est pas encore activée pour notre projet.
+
+Voici la correction en deux voies (tu peux faire A tout de suite, puis B pour réactiver les index) (IL FAUT CHOISIR L'OPTION B)
+
+
+
+## A) Déployer sans toucher aux index (immédiat)
+
+Tant que l’API n’est pas activée, déploie **seulement les règles** :
+
+```powershell
+firebase deploy --only "firestore:rules"
+```
+
+ou enlève temporairement la clé `"indexes"` de `firebase.json` :
+
+```json
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
+```
+
+Puis:
+
+```powershell
+firebase deploy --only "firestore"
+```
+
+> Tes règles restent correctes; l’erreur 403 ne concernait que l’appel aux **indexes**.
+
+---
+
+## B) Activer l’API Cloud Firestore (solution propre)
+
+1. Ouvre ce lien (déjà fourni par Firebase) et **active l’API** :
+   [https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=backend-demo-1](https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=backend-demo-1)
+
+   * Vérifie bien que le **projet actif** est `backend-demo-1`.
+   * Clique sur **Enable** (Activer).
+   * Patiente 1–2 minutes.
+
+2. (Si ce n’est pas fait) Dans **Firebase Console → Firestore Database**, clique **Create database** et termine l’assistant (Production/Test). Ça “finalise” l’initialisation côté Firebase.
+
+3. Relance le déploiement complet Firestore (règles + index) :
+
+```powershell
+firebase deploy --only "firestore"
+```
+
+Tu devrais voir :
+
+* `rules file firestore.rules compiled successfully`
+* `firestore: deploying indexes...`
+* puis un `+` vert de réussite.
+
+---
+
+## Pourquoi ça arrive ?
+
+* Les **règles** se déploient via un endpoint interne Firebase (OK même si l’API GCP n’était pas activée).
+* Les **indexes** passent par **l’API Cloud Firestore** GCP → d’où le 403 tant qu’elle n’est pas “Enabled”.
+
+---
+
+## Récap express
+
+* Tu peux **continuer sans index** (A) : `firebase deploy --only "firestore:rules"`.
+* Pour réactiver le déploiement des **index** : **active l’API** (B) via le lien → reviens faire `firebase deploy --only "firestore"`.
+
+
 
 
 
