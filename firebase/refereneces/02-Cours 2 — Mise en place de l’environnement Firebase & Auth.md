@@ -358,6 +358,17 @@ npm run serve
 
 UI des émulateurs (souvent) : `http://localhost:4000`
 
+
+
+### Erreur :
+
+```bash
+PS C:\03-projetsGA\autres\demoflutter1> npm run serve npm error Missing script: "serve" npm error npm error To see a list of scripts, run: npm error npm run npm error A complete log of this run can be found in: C:\Users\rehou\AppData\Local\npm-cache\_logs\2025-09-23T00_22_10_921Z-debug-0.log
+```
+
+### Solution : voir l'annexe 4
+
+
 ---
 
 ## 9) Test côté client : obtenir un ID token
@@ -1428,6 +1439,159 @@ Tu devrais voir :
 
 * Tu peux **continuer sans index** (A) : `firebase deploy --only "firestore:rules"`.
 * Pour réactiver le déploiement des **index** : **active l’API** (B) via le lien → reviens faire `firebase deploy --only "firestore"`.
+
+
+<br/>
+<br/>
+
+# Annexe 5
+
+
+
+# Option 1 — Lancer les émulateurs sans script
+
+Depuis la **racine** du projet (`demoflutter1\`) :
+
+```powershell
+firebase emulators:start
+```
+
+> Ça suffit pour démarrer **Auth (9099)**, **Firestore (8080)**, **Functions (5001)** et l’**UI** (souvent sur 4000).
+
+---
+
+# Option 2 — Ajouter le script `serve` (recommandé pour tes étudiants)
+
+## 1) Arborescence ASCII (où se trouvent les fichiers)
+
+```
+demoflutter1/
+├─ .firebaserc
+├─ firebase.json
+├─ firestore.rules
+├─ firestore.indexes.json
+├─ package.json                 ← on ajoute "serve" ici
+└─ functions/
+   ├─ package.json             ← contient déjà "serve": "firebase emulators:start"
+   ├─ tsconfig.json
+   ├─ .eslintrc.js
+   └─ src/
+      ├─ index.ts
+      ├─ firebase.ts
+      ├─ middlewares/
+      │  └─ auth.ts
+      └─ controllers/
+         └─ noteController.ts
+```
+
+## 2) Mets à jour **`package.json` (racine)**
+
+Ajoute des scripts qui redirigent vers `functions/` et un `serve` global :
+
+```json
+{
+  "name": "backend-demo-1-root",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix functions run build",
+    "serve": "firebase emulators:start",
+    "deploy:functions": "npm --prefix functions run build && firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:all": "npm --prefix functions run build && firebase deploy --only functions,firestore:rules"
+  }
+}
+```
+
+> Tu peux créer ce fichier s’il n’existe pas, ou ajouter/compléter les `scripts` si le fichier existe.
+
+## 3) Vérifie que **`functions/package.json`** a bien un `serve`
+
+Il doit déjà contenir :
+
+```json
+{
+  "scripts": {
+    "build": "tsc",
+    "serve": "firebase emulators:start",
+    "deploy": "firebase deploy --only functions",
+    "lint": "eslint --ext .js,.ts . || exit 0"
+  }
+}
+```
+
+## 4) Lance les émulateurs
+
+Depuis la **racine** :
+
+```powershell
+npm run serve
+```
+
+---
+
+## URLs utiles (par défaut)
+
+* Emulator UI : `http://localhost:4000`
+* Functions (local) :
+
+  * `http://localhost:5001/<PROJECT_ID>/us-central1/api/health`
+  * `http://localhost:5001/<PROJECT_ID>/us-central1/api/me`
+
+> Remplace `<PROJECT_ID>` par `backend-demo-1`.
+
+---
+
+## Client web en **mode émulateurs**
+
+Quand tu testes depuis une app web locale, connecte l’émulateur Auth :
+
+```ts
+import {initializeApp} from "firebase/app";
+import {getAuth, signInWithEmailAndPassword, connectAuthEmulator} from "firebase/auth";
+
+const app = initializeApp({
+  apiKey: "dev-key",
+  authDomain: "localhost",
+  projectId: "backend-demo-1"
+});
+
+const auth = getAuth(app);
+connectAuthEmulator(auth, "http://localhost:9099");
+
+async function callMe() {
+  const cred = await signInWithEmailAndPassword(auth, "john@doe.com", "secret123");
+  const idToken = await cred.user.getIdToken();
+
+  const res = await fetch("http://localhost:5001/backend-demo-1/us-central1/api/me", {
+    headers: {Authorization: `Bearer ${idToken}`}
+  });
+  console.log(await res.json());
+}
+```
+
+---
+
+## cURL (local)
+
+```bash
+# Health (public)
+curl http://localhost:5001/backend-demo-1/us-central1/api/health
+
+# Créer une note (protégé)
+curl -X POST "http://localhost:5001/backend-demo-1/us-central1/api/v1/notes" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <ID_TOKEN>" \
+  -d "{\"title\":\"Ma première note\",\"content\":\"Bonjour\"}"
+```
+
+---
+
+## Si tu vois encore “Missing script: serve”
+
+* Vérifie que tu es **à la racine** (`demoflutter1\`) quand tu fais `npm run serve`.
+* Vérifie que **`package.json` (racine)** contient bien `"serve": "firebase emulators:start"`.
+* Alternative immédiate : exécute directement `firebase emulators:start`.
+
 
 
 
