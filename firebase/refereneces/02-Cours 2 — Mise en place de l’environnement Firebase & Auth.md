@@ -1603,8 +1603,141 @@ curl -X POST "http://localhost:5001/backend-demo-1/us-central1/api/v1/notes" \
 <br/>
 <br/>
 
-# Annexe 6
+# Annexe 6 - Problème de port 8080
 
+- Si **le port 8080 est déjà utilisé**, donc l’émulateur Firestore ne peut pas démarrer. Tu as deux chemins simples :
+
+
+
+# Option A — Libérer le port 8080 (recommandé)
+
+## 1) Trouver le processus qui occupe 8080
+
+PowerShell (admin pas obligatoire, mais utile pour tuer un process) :
+
+```powershell
+netstat -ano | findstr :8080
+```
+
+Tu verras une ligne avec un **PID** (dernier champ). Par exemple `LISTENING ... PID`.
+
+## 2) Identifier l’appli
+
+```powershell
+tasklist /FI "PID eq <PID_TRouvé>"
+```
+
+ou
+
+```powershell
+Get-Process -Id <PID_TRouvé>
+```
+
+## 3) Fermer ou tuer le processus
+
+Fermer proprement l’appli si tu la connais (Docker Desktop, un autre serveur web, un ancien émulateur, etc.).
+Sinon, force (en tant qu'administrateur):
+
+```powershell
+taskkill /PID <PID_TRouvé> /F
+```
+
+## 4) Relancer les émulateurs
+
+```powershell
+firebase emulators:start
+```
+
+ou avec sélection explicite (PowerShell → guillemets !) :
+
+```powershell
+firebase emulators:start --only "auth,functions,firestore"
+```
+
+---
+
+# Option B — Changer le port de Firestore (très rapide)
+
+Modifie **`firebase.json`** à la racine pour éviter 8080 (ex. 8081) :
+
+```
+demoflutter1/
+├─ .firebaserc
+├─ firebase.json          ← on modifie ici
+├─ firestore.rules
+└─ functions/
+   └─ ...
+```
+
+## `firebase.json` (exemple corrigé)
+
+```json
+{
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "npm --prefix \"%RESOURCE_DIR%\" run build"
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": {"port": 5001},
+    "firestore": {"host": "127.0.0.1", "port": 8081},
+    "auth": {"port": 9099},
+    "ui": {"enabled": true}
+  }
+}
+```
+
+Ensuite :
+
+```powershell
+firebase emulators:start
+```
+
+> Si tu changes le port Firestore, **pense à connecter l’émulateur Firestore** dans ton client web (si tu en utilises un) :
+
+```ts
+import {getFirestore, connectFirestoreEmulator} from "firebase/firestore";
+const db = getFirestore(app);
+connectFirestoreEmulator(db, "127.0.0.1", 8081);
+```
+
+Pour **Auth**, on garde :
+
+```ts
+import {connectAuthEmulator} from "firebase/auth";
+connectAuthEmulator(auth, "http://localhost:9099");
+```
+
+---
+
+## Notes utiles
+
+* Souvent, **Docker**, un **autre serveur web**, ou un **ancien émulateur** bloquent 8080.
+* Si tu as lancé des émulateurs dans une autre fenêtre, ferme-la ou tue le PID.
+* Pour Functions Admin SDK, quand tu démarres via `firebase emulators:start`, les variables d’environnement sont injectées automatiquement → Admin parle à l’émulateur. Si tu lances ton serveur Express autrement, force l’ENV `FIRESTORE_EMULATOR_HOST=127.0.0.1:8081`.
+
+---
+
+## Vérification rapide
+
+1. Démarrage :
+
+```powershell
+firebase emulators:start --only "auth,functions,firestore"
+```
+
+2. UI : `http://localhost:4000`
+3. Endpoints locaux :
+
+```
+http://localhost:5001/backend-demo-1/us-central1/api/health
+http://localhost:5001/backend-demo-1/us-central1/api/me
+```
 
 
 
