@@ -1509,6 +1509,32 @@ Ajoute des scripts qui redirigent vers `functions/` et un `serve` global :
 }
 ```
 
+
+> Voici le package.json finale dans la racine 
+
+
+```json
+{
+  "name": "backend-demo-1-root",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix functions run build",
+    "serve": "firebase emulators:start",
+    "deploy:functions": "npm --prefix functions run build && firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:all": "npm --prefix functions run build && firebase deploy --only functions,firestore:rules"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3"
+  }
+}
+```
+
 > Tu peux créer ce fichier s’il n’existe pas, ou ajouter/compléter les `scripts` si le fichier existe.
 
 ## 3) Vérifie que **`functions/package.json`** a bien un `serve`
