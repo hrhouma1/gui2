@@ -835,6 +835,12 @@ UI Emulators : `http://localhost:4000`
 curl https://REGION-PROJECT_ID.cloudfunctions.net/api/health
 ```
 
+ou
+
+```bash
+http://localhost:5001/backend-demo-1/us-central1/api/health
+```
+
 ## Auth (côté client) → `/me`
 
 * Se connecter (`signInWithEmailAndPassword`) pour obtenir un **ID token**
