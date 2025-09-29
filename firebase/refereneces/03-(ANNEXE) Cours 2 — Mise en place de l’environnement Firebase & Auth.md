@@ -298,3 +298,150 @@ service cloud.firestore {
 
 ```
 
+
+
+
+
+# Commande 1 - Création du token
+
+```powershell
+$login = Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=anything" `
+  -ContentType "application/json" `
+  -Body '{"email":"john@doe.com","password":"secret123","returnSecureToken":true}'
+
+$token = $login.idToken
+$token
+```
+
+# Commande 2 - Appeler ta route protégée `/me` (Functions Emulator)
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:5001/backend-demo-1/us-central1/api/me" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+> Ça doit répondre `{ "uid": "..." }`.
+
+> Variante cURL “pure” (CMD/PowerShell) :
+
+# Commande 3 - Créer l’utilisateur dans **l’émulateur**
+
+```powershell
+# crée john@doe.com dans l'Auth Emulator (clé = anything)
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=anything" `
+  -ContentType "application/json" `
+  -Body '{"email":"john@doe.com","password":"secret123","returnSecureToken":true}'
+```
+
+# Commande 4
+
+
+
+
+##  Méthode 1 — Tout en ligne de commande (PowerShell friendly)
+
+### 1) Créer l’utilisateur dans **l’émulateur**
+
+```powershell
+# crée john@doe.com dans l'Auth Emulator (clé = anything)
+Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=anything" `
+  -ContentType "application/json" `
+  -Body '{"email":"john@doe.com","password":"secret123","returnSecureToken":true}'
+```
+
+### 2) Se connecter → récupérer l’ID token
+
+```powershell
+$login = Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=anything" `
+  -ContentType "application/json" `
+  -Body '{"email":"john@doe.com","password":"secret123","returnSecureToken":true}'
+
+$token = $login.idToken
+$token
+```
+
+### 3) Appeler ta route protégée `/me` (Functions Emulator)
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:5001/backend-demo-1/us-central1/api/me" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+> Ça doit répondre `{ "uid": "..." }`.
+
+> Variante cURL “pure” (CMD/PowerShell) :
+
+```bat
+curl -X POST "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=anything" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"john@doe.com\",\"password\":\"secret123\",\"returnSecureToken\":true}"
+
+curl -X POST "http://localhost:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=anything" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"email\":\"john@doe.com\",\"password\":\"secret123\",\"returnSecureToken\":true}"
+```
+
+(prends `idToken` de la 2ᵉ réponse et utilise-le dans `Authorization: Bearer <ID_TOKEN>`)
+
+
+
+# Méthode 2 — Par l’UI des Émulateurs (clic)
+
+1. Ouvre `http://localhost:4000` → **Authentication** → **Add user** → saisis `john@doe.com` / `secret123`.
+2. Reprends **l’étape 2** ci-dessus (signIn via REST) pour obtenir l’`idToken`.
+3. Appelle `/me` avec le header `Authorization: Bearer <ID_TOKEN>`.
+
+
+
+# Méthode 3 — Dans la console Dev du navigateur (JS)
+
+```js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, connectAuthEmulator } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const app = initializeApp({ apiKey: "dev", authDomain: "localhost", projectId: "backend-demo-1" });
+const auth = getAuth(app);
+connectAuthEmulator(auth, "http://localhost:9099");
+
+// si l'utilisateur n'existe pas encore, crée-le une fois via l'UI ou la route signUp
+const cred = await signInWithEmailAndPassword(auth, "john@doe.com", "secret123");
+const idToken = await cred.user.getIdToken();
+console.log("ID_TOKEN =", idToken);
+
+const me = await fetch("http://localhost:5001/backend-demo-1/us-central1/api/me", {
+  headers: { Authorization: `Bearer ${idToken}` }
+});
+console.log(await me.json());
+```
+
+---
+
+## ⚠️ Petits pièges courants
+
+* **Toujours l’émulateur !** Tes URLs doivent pointer sur `http://localhost:9099/...identitytoolkit...` quand tu es en local.
+* **Compte inexistant → `EMAIL_NOT_FOUND`** : crée d’abord l’utilisateur (signUp ou UI).
+* **`Missing Bearer token`** : le navigateur n’envoie aucun header. Utilise Postman/cURL/JS avec
+  `Authorization: Bearer <ID_TOKEN>`.
+* **Ports** : Functions (`5001`), Auth (`9099`), Firestore (`8080` ou celui que tu as défini), UI (`4000`).
+* Si tu as changé le port Firestore (ex. `8081`), pense à `connectFirestoreEmulator(db, "127.0.0.1", 8081)` côté client.
+
+
+
+
+# Commande 5
+
+
+# Commande 6
+
+
+# Commande 7
+
+
+
+# Commande 8
