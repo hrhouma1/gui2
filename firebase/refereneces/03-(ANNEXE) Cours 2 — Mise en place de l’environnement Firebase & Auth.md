@@ -436,9 +436,23 @@ console.log(await me.json());
 
 # Commande 5
 
+```js
+node --version
+npm install -g firebase-tools
+firebase --version
+firebase login
+firebase emulators:start 
+```
+
 
 # Commande 6
 
+```js
+firebase deploy --only firestore:rules
+firebase init emulators
+npm run serve
+firebase emulators:start  
+```
 
 # Commande 7
 
